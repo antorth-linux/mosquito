@@ -67,13 +67,29 @@ impl Position {
     }
 }
 
-impl<'a> Region {
+impl Region {
     pub fn new(size: Rectangle, pos: Position, float: bool) -> Self {
         Self { size, pos, float }
     }
 
     pub fn area(&self) -> u64 {
         self.size.w * self.size.h
+    }
+
+    pub fn top(&self) -> i64 {
+        self.pos.y
+    }
+
+    pub fn bottom(&self) -> i64 {
+        self.pos.y + self.size.h as i64
+    }
+
+    pub fn left(&self) -> i64 {
+        self.pos.x
+    }
+
+    pub fn right(&self) -> i64 {
+        self.pos.x + self.size.w as i64
     }
 }
 
@@ -119,6 +135,23 @@ impl Workspace {
         self.regions.extend([region]);
 
         self.regions.last().unwrap()
+    }
+
+    pub fn adjacent_regions(&self, region: &Region, direction: &Direction) -> Vec<&Region> {
+        let mut adjacent = Vec::new();
+
+        for sibling in self.regions.iter() {
+            if match *direction {
+                Direction::Up => (0..1).contains(&(region.top() - sibling.bottom())),
+                Direction::Down => (-1..0).contains(&(region.bottom() - sibling.top())),
+                Direction::Left => (0..1).contains(&(region.left() - sibling.right())),
+                Direction::Right => (-1..0).contains(&(region.right() - sibling.left())),
+            } {
+                adjacent.extend([sibling])
+            }
+        }
+
+        adjacent
     }
 
     // pub fn move_region(&mut self, region: &Region, direction: &Direction) {
