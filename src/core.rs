@@ -1,8 +1,11 @@
+const MIN_REGION_SIZE: Rectangle = Rectangle { w: 20, h: 20 };
+
 #[derive(Copy, Clone, Debug, PartialEq)]
 pub enum ErrorKind {
     UnknownRegion,
     UnknownWorkspace,
     UnknownMonitor,
+    InvalidRegion,
 }
 
 pub type Result<T> = std::result::Result<T, ErrorKind>;
@@ -90,6 +93,48 @@ impl Region {
 
     pub fn right(&self) -> i64 {
         self.pos.x + self.size.w as i64
+    }
+
+    pub fn set_top(&mut self, new: i64) -> Result<&mut Self> {
+        if new > self.bottom() - MIN_REGION_SIZE.h as i64 {
+            return Err(ErrorKind::InvalidRegion);
+        }
+
+        self.size.h = (self.bottom() - new) as u64;
+        self.pos.y = new;
+
+        Ok(self)
+    }
+
+    pub fn set_bottom(&mut self, new: i64) -> Result<&mut Self> {
+        if new < self.top() + MIN_REGION_SIZE.h as i64 {
+            return Err(ErrorKind::InvalidRegion);
+        }
+
+        self.size.h = (new - self.top()) as u64;
+
+        Ok(self)
+    }
+
+    pub fn set_left(&mut self, new: i64) -> Result<&mut Self> {
+        if new > self.right() - MIN_REGION_SIZE.w as i64 {
+            return Err(ErrorKind::InvalidRegion);
+        }
+
+        self.size.w = (self.right() - new) as u64;
+        self.pos.x = new;
+
+        Ok(self)
+    }
+
+    pub fn set_right(&mut self, new: i64) -> Result<&mut Self> {
+        if new < self.left() + MIN_REGION_SIZE.w as i64 {
+            return Err(ErrorKind::InvalidRegion);
+        }
+
+        self.size.w = (new - self.left()) as u64;
+
+        Ok(self)
     }
 }
 
