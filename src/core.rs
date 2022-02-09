@@ -197,6 +197,23 @@ impl Workspace {
             .collect()
     }
 
+    pub fn adjacent_regions(&self, region: &Region, direction: &Direction) -> Vec<&Region> {
+        self.shared_edge_regions(region, direction)
+            .iter()
+            .copied()
+            .filter(|sibling| match *direction {
+                Direction::Up | Direction::Down => {
+                    (sibling.left() >= region.left() && sibling.left() <= region.right())
+                        || (sibling.right() <= region.right() && sibling.right() >= region.left())
+                }
+                Direction::Left | Direction::Right => {
+                    (sibling.top() >= region.top() && sibling.top() <= region.bottom())
+                        || (sibling.bottom() <= region.bottom() && sibling.bottom() >= region.top())
+                }
+            })
+            .collect()
+    }
+
     // pub fn move_region(&mut self, region: &Region, direction: &Direction) {
     //     match direction {
     //         Direction::Up => {}
