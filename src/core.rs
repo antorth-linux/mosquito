@@ -151,28 +151,31 @@ impl Workspace {
         this
     }
 
+    /// Create a new region using half the width or height of a sibling region.
+    /// The direction specifies which edge of the sibling will be moved to make space for the new region.
+    /// The sibling will be the larger region in the event that the halved dimension of the sibling region is an odd number.
     pub fn create_region(&mut self, sibling: &mut Region, direction: &Direction) -> &Region {
         let mut region = *sibling;
 
         match *direction {
             Direction::Up => {
                 region.size.h /= 2;
-                sibling.size.h /= 2;
+                sibling.size.h = sibling.size.h / 2 + sibling.size.h % 2;
                 sibling.pos.y += region.size.h as i64;
             }
             Direction::Down => {
                 region.size.h /= 2;
-                sibling.size.h /= 2;
+                sibling.size.h = sibling.size.h / 2 + sibling.size.h % 2;
                 region.pos.y += sibling.size.h as i64;
             }
             Direction::Left => {
                 region.size.w /= 2;
-                sibling.size.w /= 2;
+                sibling.size.w = sibling.size.w / 2 + sibling.size.w % 2;
                 sibling.pos.x += region.size.w as i64;
             }
             Direction::Right => {
                 region.size.w /= 2;
-                sibling.size.w /= 2;
+                sibling.size.w = sibling.size.w / 2 + sibling.size.w % 2;
                 region.pos.x += sibling.size.w as i64;
             }
         }
