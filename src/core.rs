@@ -185,21 +185,16 @@ impl Workspace {
         self.regions.last().unwrap()
     }
 
-    pub fn adjacent_regions(&self, region: &Region, direction: &Direction) -> Vec<&Region> {
-        let mut adjacent = Vec::new();
-
-        for sibling in self.regions.iter() {
-            if match *direction {
-                Direction::Up => (0..1).contains(&(region.top() - sibling.bottom())),
-                Direction::Down => (-1..0).contains(&(region.bottom() - sibling.top())),
-                Direction::Left => (0..1).contains(&(region.left() - sibling.right())),
-                Direction::Right => (-1..0).contains(&(region.right() - sibling.left())),
-            } {
-                adjacent.extend([sibling])
-            }
-        }
-
-        adjacent
+    pub fn shared_edge_regions(&self, region: &Region, direction: &Direction) -> Vec<&Region> {
+        self.regions
+            .iter()
+            .filter(|sibling| match *direction {
+                Direction::Up => region.top() - sibling.bottom() == 1,
+                Direction::Down => region.bottom() - sibling.top() == 1,
+                Direction::Left => region.left() - sibling.right() == 1,
+                Direction::Right => region.right() - sibling.left() == 1,
+            })
+            .collect()
     }
 
     // pub fn move_region(&mut self, region: &Region, direction: &Direction) {
