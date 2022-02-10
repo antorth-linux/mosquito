@@ -164,7 +164,7 @@ impl Workspace {
     }
 
     /// Create a new region using half the width or height of a sibling region.
-    /// The direction specifies which edge of the sibling will be moved to make space for the new region.
+    /// The `direction` specifies which edge of the sibling will be moved to make space for the new region.
     /// The sibling will be the larger region in the event that the halved dimension of the sibling region is an odd number.
     pub fn create_region(&mut self, sibling: &mut Region, direction: &Direction) -> usize {
         let mut region = *sibling;
@@ -236,6 +236,35 @@ impl Workspace {
                 }
             })
             .collect()
+    }
+
+    /// Find the adjacent region with the largest overlap on the edge corresponding with `direction`.
+    /// In the event that there are no regions touching the edge of the subject, `None` will be returned.
+    /// This currently does not take into account that several sibling regions may have the same overlap;
+    /// which sibling will be returned is undefined, however it will most likely be the sibling that was
+    /// created the latest as it is going to have a higher index in the internal iterable.
+    pub fn major_adjacent_region(&self, region: &Region, direction: &Direction) -> Option<usize> {
+        self.adjacent_regions(region, direction)
+            .into_iter()
+            .map(|index| {
+                let sibling = self.regions.get(index).unwrap();
+
+                (
+                    index,
+                    match *direction {
+                        Direction::Up | Direction::Down => i64::abs(
+                            i64::max(sibling.left(), region.left())
+                                - i64::min(sibling.right(), region.right()),
+                        ) as u64,
+                        Direction::Left | Direction::Right => i64::abs(
+                            i64::max(sibling.top(), region.top())
+                                - i64::min(sibling.bottom(), region.bottom()),
+                        ) as u64,
+                    },
+                )
+            })
+            .max_by_key(|x| x.1)
+            .map(|x| x.0)
     }
 
     pub fn resize_region(&mut self, region: &mut Region, resize: &Resize) -> Result<()> {
