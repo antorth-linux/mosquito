@@ -154,7 +154,7 @@ impl Workspace {
     /// Create a new region using half the width or height of a sibling region.
     /// The direction specifies which edge of the sibling will be moved to make space for the new region.
     /// The sibling will be the larger region in the event that the halved dimension of the sibling region is an odd number.
-    pub fn create_region(&mut self, sibling: &mut Region, direction: &Direction) -> &Region {
+    pub fn create_region(&mut self, sibling: &mut Region, direction: &Direction) -> usize {
         let mut region = *sibling;
 
         match *direction {
@@ -182,33 +182,45 @@ impl Workspace {
 
         self.regions.extend([region]);
 
-        self.regions.last().unwrap()
+        self.regions.len() - 1
     }
 
-    pub fn shared_edge_regions(&self, region: &Region, direction: &Direction) -> Vec<&Region> {
+    pub fn shared_edge_regions(&self, region: &Region, direction: &Direction) -> Vec<usize> {
         self.regions
             .iter()
-            .filter(|sibling| match *direction {
-                Direction::Up => region.top() - sibling.bottom() == 1,
-                Direction::Down => region.bottom() - sibling.top() == 1,
-                Direction::Left => region.left() - sibling.right() == 1,
-                Direction::Right => region.right() - sibling.left() == 1,
+            .enumerate()
+            .filter_map(|(index, sibling)| {
+                if match *direction {
+                    Direction::Up => region.top() - sibling.bottom() == 1,
+                    Direction::Down => region.bottom() - sibling.top() == 1,
+                    Direction::Left => region.left() - sibling.right() == 1,
+                    Direction::Right => region.right() - sibling.left() == 1,
+                } {
+                    Some(index)
+                } else {
+                    None
+                }
             })
             .collect()
     }
 
-    pub fn adjacent_regions(&self, region: &Region, direction: &Direction) -> Vec<&Region> {
+    pub fn adjacent_regions(&self, region: &Region, direction: &Direction) -> Vec<usize> {
         self.shared_edge_regions(region, direction)
-            .iter()
-            .copied()
-            .filter(|sibling| match *direction {
-                Direction::Up | Direction::Down => {
-                    (sibling.left() >= region.left() && sibling.left() <= region.right())
-                        || (sibling.right() <= region.right() && sibling.right() >= region.left())
-                }
-                Direction::Left | Direction::Right => {
-                    (sibling.top() >= region.top() && sibling.top() <= region.bottom())
-                        || (sibling.bottom() <= region.bottom() && sibling.bottom() >= region.top())
+            .into_iter()
+            .filter(|index| {
+                let sibling = self.regions.get(*index).unwrap();
+
+                match *direction {
+                    Direction::Up | Direction::Down => {
+                        (sibling.left() >= region.left() && sibling.left() <= region.right())
+                            || (sibling.right() <= region.right()
+                                && sibling.right() >= region.left())
+                    }
+                    Direction::Left | Direction::Right => {
+                        (sibling.top() >= region.top() && sibling.top() <= region.bottom())
+                            || (sibling.bottom() <= region.bottom()
+                                && sibling.bottom() >= region.top())
+                    }
                 }
             })
             .collect()
