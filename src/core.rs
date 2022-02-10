@@ -167,10 +167,10 @@ impl Workspace {
     /// Create a new region using half the width or height of a sibling region.
     /// The `direction` specifies which edge of the sibling will be moved to make space for the new region.
     /// The sibling will be the larger region in the event that the halved dimension of the sibling region is an odd number.
-    pub fn create_region(&mut self, sibling: &mut Region, direction: &Direction) -> usize {
+    pub fn create_region(&mut self, sibling: &mut Region, direction: Direction) -> usize {
         let mut region = *sibling;
 
-        match *direction {
+        match direction {
             Direction::Up => {
                 region.size.h /= 2;
                 sibling.size.h = sibling.size.h / 2 + sibling.size.h % 2;
@@ -198,12 +198,12 @@ impl Workspace {
         self.regions.len() - 1
     }
 
-    pub fn shared_edge_regions(&self, region: &Region, direction: &Direction) -> Vec<usize> {
+    pub fn shared_edge_regions(&self, region: &Region, direction: Direction) -> Vec<usize> {
         self.regions
             .iter()
             .enumerate()
             .filter_map(|(index, sibling)| {
-                if match *direction {
+                if match direction {
                     Direction::Up => region.top() - sibling.bottom() == 1,
                     Direction::Down => region.bottom() - sibling.top() == 1,
                     Direction::Left => region.left() - sibling.right() == 1,
@@ -217,13 +217,13 @@ impl Workspace {
             .collect()
     }
 
-    pub fn adjacent_regions(&self, region: &Region, direction: &Direction) -> Vec<usize> {
+    pub fn adjacent_regions(&self, region: &Region, direction: Direction) -> Vec<usize> {
         self.shared_edge_regions(region, direction)
             .into_iter()
             .filter(|index| {
                 let sibling = self.regions.get(*index).unwrap();
 
-                match *direction {
+                match direction {
                     Direction::Up | Direction::Down => {
                         (sibling.left() >= region.left() && sibling.left() <= region.right())
                             || (sibling.right() <= region.right()
@@ -244,7 +244,7 @@ impl Workspace {
     /// This currently does not take into account that several sibling regions may have the same overlap;
     /// which sibling will be returned is undefined, however it will most likely be the sibling that was
     /// created the latest as it is going to have a higher index in the internal iterable.
-    pub fn major_adjacent_region(&self, region: &Region, direction: &Direction) -> Option<usize> {
+    pub fn major_adjacent_region(&self, region: &Region, direction: Direction) -> Option<usize> {
         self.adjacent_regions(region, direction)
             .into_iter()
             .map(|index| {
@@ -252,7 +252,7 @@ impl Workspace {
 
                 (
                     index,
-                    match *direction {
+                    match direction {
                         Direction::Up | Direction::Down => i64::abs(
                             i64::max(sibling.left(), region.left())
                                 - i64::min(sibling.right(), region.right()),
@@ -268,12 +268,12 @@ impl Workspace {
             .map(|x| x.0)
     }
 
-    pub fn resize_region(&mut self, region: &mut Region, resize: &Resize) -> Result<()> {
-        match *resize {
+    pub fn resize_region(&mut self, region: &mut Region, resize: Resize) -> Result<()> {
+        match resize {
             Resize::Top(top) => {
                 region.set_top(region.top() + top)?;
 
-                for index in self.adjacent_regions(region, &Direction::Up) {
+                for index in self.adjacent_regions(region, Direction::Up) {
                     let sibling = self.regions.get_mut(index).unwrap();
 
                     sibling.set_bottom(sibling.bottom() - top)?;
@@ -282,7 +282,7 @@ impl Workspace {
             Resize::Bottom(bottom) => {
                 region.set_bottom(region.bottom() + bottom)?;
 
-                for index in self.adjacent_regions(region, &Direction::Down) {
+                for index in self.adjacent_regions(region, Direction::Down) {
                     let sibling = self.regions.get_mut(index).unwrap();
 
                     sibling.set_top(sibling.top() - bottom)?;
@@ -291,7 +291,7 @@ impl Workspace {
             Resize::Left(left) => {
                 region.set_left(region.left() + left)?;
 
-                for index in self.adjacent_regions(region, &Direction::Left) {
+                for index in self.adjacent_regions(region, Direction::Left) {
                     let sibling = self.regions.get_mut(index).unwrap();
 
                     sibling.set_right(sibling.right() - left)?;
@@ -300,34 +300,34 @@ impl Workspace {
             Resize::Right(right) => {
                 region.set_right(region.right() + right)?;
 
-                for index in self.adjacent_regions(region, &Direction::Right) {
+                for index in self.adjacent_regions(region, Direction::Right) {
                     let sibling = self.regions.get_mut(index).unwrap();
 
                     sibling.set_left(sibling.left() - right)?;
                 }
             }
             Resize::TopLeft(top, left) => {
-                self.resize_region(region, &Resize::Top(top))?;
-                self.resize_region(region, &Resize::Left(left))?;
+                self.resize_region(region, Resize::Top(top))?;
+                self.resize_region(region, Resize::Left(left))?;
             }
             Resize::TopRight(top, right) => {
-                self.resize_region(region, &Resize::Top(top))?;
-                self.resize_region(region, &Resize::Right(right))?;
+                self.resize_region(region, Resize::Top(top))?;
+                self.resize_region(region, Resize::Right(right))?;
             }
             Resize::BottomLeft(bottom, left) => {
-                self.resize_region(region, &Resize::Bottom(bottom))?;
-                self.resize_region(region, &Resize::Left(left))?;
+                self.resize_region(region, Resize::Bottom(bottom))?;
+                self.resize_region(region, Resize::Left(left))?;
             }
             Resize::BottomRight(bottom, right) => {
-                self.resize_region(region, &Resize::Bottom(bottom))?;
-                self.resize_region(region, &Resize::Right(right))?;
+                self.resize_region(region, Resize::Bottom(bottom))?;
+                self.resize_region(region, Resize::Right(right))?;
             }
         }
 
         Ok(())
     }
 
-    pub fn swap_region(&mut self, region: &mut Region, direction: &Direction) -> Result<()> {
+    pub fn swap_region(&mut self, region: &mut Region, direction: Direction) -> Result<()> {
         let index = self
             .major_adjacent_region(region, direction)
             .ok_or(ErrorKind::NoAdjacentRegions)?;
