@@ -55,6 +55,18 @@ pub struct Manager {
     pub monitors: Vec<Monitor>,
 }
 
+#[derive(Copy, Clone, Debug, PartialEq)]
+pub enum Resize {
+    Top(i64),
+    Bottom(i64),
+    Left(i64),
+    Right(i64),
+    TopLeft(i64, i64),
+    TopRight(i64, i64),
+    BottomLeft(i64, i64),
+    BottomRight(i64, i64),
+}
+
 impl Rectangle {
     pub fn new(width: u64, height: u64) -> Self {
         Self {
@@ -224,6 +236,65 @@ impl Workspace {
                 }
             })
             .collect()
+    }
+
+    pub fn resize_region(&mut self, region: &mut Region, resize: &Resize) -> Result<()> {
+        match *resize {
+            Resize::Top(top) => {
+                region.set_top(region.top() + top)?;
+
+                for index in self.adjacent_regions(region, &Direction::Up) {
+                    let sibling = self.regions.get_mut(index).unwrap();
+
+                    sibling.set_bottom(sibling.bottom() - top)?;
+                }
+            }
+            Resize::Bottom(bottom) => {
+                region.set_bottom(region.bottom() + bottom)?;
+
+                for index in self.adjacent_regions(region, &Direction::Down) {
+                    let sibling = self.regions.get_mut(index).unwrap();
+
+                    sibling.set_top(sibling.top() - bottom)?;
+                }
+            }
+            Resize::Left(left) => {
+                region.set_left(region.left() + left)?;
+
+                for index in self.adjacent_regions(region, &Direction::Left) {
+                    let sibling = self.regions.get_mut(index).unwrap();
+
+                    sibling.set_right(sibling.right() - left)?;
+                }
+            }
+            Resize::Right(right) => {
+                region.set_right(region.right() + right)?;
+
+                for index in self.adjacent_regions(region, &Direction::Right) {
+                    let sibling = self.regions.get_mut(index).unwrap();
+
+                    sibling.set_left(sibling.left() - right)?;
+                }
+            }
+            Resize::TopLeft(top, left) => {
+                self.resize_region(region, &Resize::Top(top))?;
+                self.resize_region(region, &Resize::Left(left))?;
+            }
+            Resize::TopRight(top, right) => {
+                self.resize_region(region, &Resize::Top(top))?;
+                self.resize_region(region, &Resize::Right(right))?;
+            }
+            Resize::BottomLeft(bottom, left) => {
+                self.resize_region(region, &Resize::Bottom(bottom))?;
+                self.resize_region(region, &Resize::Left(left))?;
+            }
+            Resize::BottomRight(bottom, right) => {
+                self.resize_region(region, &Resize::Bottom(bottom))?;
+                self.resize_region(region, &Resize::Right(right))?;
+            }
+        }
+
+        Ok(())
     }
 
     // pub fn move_region(&mut self, region: &Region, direction: &Direction) {
