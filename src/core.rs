@@ -6,6 +6,7 @@ pub enum ErrorKind {
     UnknownWorkspace,
     UnknownMonitor,
     InvalidRegion,
+    NoAdjacentRegions,
 }
 
 pub type Result<T> = std::result::Result<T, ErrorKind>;
@@ -326,14 +327,17 @@ impl Workspace {
         Ok(())
     }
 
-    // pub fn move_region(&mut self, region: &Region, direction: &Direction) {
-    //     match direction {
-    //         Direction::Up => {}
-    //         Direction::Down => {}
-    //         Direction::Left => {}
-    //         Direction::Right => {}
-    //     }
-    // }
+    pub fn swap_region(&mut self, region: &mut Region, direction: &Direction) -> Result<()> {
+        let index = self
+            .major_adjacent_region(region, direction)
+            .ok_or(ErrorKind::NoAdjacentRegions)?;
+        let sibling = self.regions.get_mut(index).unwrap();
+
+        std::mem::swap(&mut region.size, &mut sibling.size);
+        std::mem::swap(&mut region.pos, &mut sibling.pos);
+
+        Ok(())
+    }
 
     // pub fn resize(&mut self, new: Rectangle) -> Result<()> {
     //     let scale_w = new.w as f64 / self.size.w as f64;
